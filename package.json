@@ -1,0 +1,30 @@
+{
+  "name": "jarvis",
+  "version": "1.0.0",
+  "description": "Voice assistant using ollama and javascript",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/a-box31/Jarvis.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/a-box31/Jarvis/issues"
+  },
+  "homepage": "https://github.com/a-box31/Jarvis#readme",
+  "dependencies": {
+    "@google-cloud/text-to-speech": "^6.1.0",
+    "@huggingface/inference": "^4.3.2",
+    "@langchain/ollama": "^0.2.3",
+    "@picovoice/leopard-node": "^2.0.6",
+    "dotenv": "^17.0.1",
+    "langchain": "^0.3.29",
+    "node-aplay": "^1.0.3"
+  }
+}
