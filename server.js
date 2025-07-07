@@ -43,6 +43,7 @@ async function TextToSpeechWithGoogle(text, outputFile){
         const client = new textToSpeech.TextToSpeechClient();
         const [response] = await client.synthesizeSpeech(request)
         fs.writeFileSync(outputFile, response.audioContent, 'binary')
+        playAudioFile(outputFile)
         return outputFile
     } catch (error ){
         console.error("Error:", error);
@@ -56,7 +57,6 @@ async function TextToSpeechWithGoogle(text, outputFile){
         const result = handle.processFile("input.mp3");
         const response = await llm.invoke([result.transcript])
         const outputFile = await TextToSpeechWithGoogle( response, "output.mp3");
-        playAudioFile("output.mp3")
     } catch (err) {
         throw err
     }
