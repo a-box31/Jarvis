@@ -23,6 +23,9 @@
     "@huggingface/inference": "^4.3.2",
     "@langchain/ollama": "^0.2.3",
     "@picovoice/leopard-node": "^2.0.6",
+    "@picovoice/picovoice-node": "^3.0.3",
+    "@picovoice/porcupine-node": "^3.0.6",
+    "@picovoice/pvrecorder-node": "^1.2.8",
     "dotenv": "^17.0.1",
     "langchain": "^0.3.29",
     "node-aplay": "^1.0.3"

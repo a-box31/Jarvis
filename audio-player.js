@@ -12,16 +12,16 @@ import { spawn } from "node:child_process";
 //   `).PlaySync();`
 // ]);
 // const winFn = (filePath) => spawn('vlc', [filePath])
-const winFn = (filePath) => spawn('mpg123', [filePath])
+const winFn = async (filePath) => await spawn('mpg123', [filePath])
 
 
 // On MacOS, we have afplay available:
-const macFn = (filePath) => spawn(`afplay`, [filePath]);
+const macFn = async (filePath) => await spawn(`afplay`, [filePath]);
 
 // And on everything else, i.e. linux/unix, we can use aplay:
 // const nxFn = (filePath) => spawn(`aplay`, [filePath]);
 // const nxFn = (filePath) => spawn(`vlc`, [filePath]);
-const nxFn = (filePath) => spawn(`mpg123`, [filePath]);
+const nxFn = async (filePath) => await spawn(`mpg123`, [filePath]);
 
 
 // Then, because your OS doesn't change during a script
