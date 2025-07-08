@@ -2,6 +2,7 @@ import { Ollama } from "@langchain/ollama"
 // import { InferenceClient } from "@huggingface/inference";
 import { Picovoice } from "@picovoice/picovoice-node"
 import { Porcupine } from "@picovoice/porcupine-node" 
+
 import { Leopard } from "@picovoice/leopard-node"
 import textToSpeech from "@google-cloud/text-to-speech"
 import { playAudioFile } from "./audio-player.js"
@@ -38,6 +39,8 @@ let porcupine = new Porcupine(
     [(os === `win32`) ? "Jarvis_en_windows_v3_0_0.ppn" : "Jarvis_en_raspberry-pi_v3_0_0.ppn"],
     [0.5]
 )
+
+
 
 
 const llm = new Ollama({
@@ -81,9 +84,41 @@ const start = async () => {
     while(1) {
         const frames = await recorder.read();
         const keywordIndex = porcupine.process(frames);
+        // detected `Jarvis
         if (keywordIndex === 0) {
-            // detected `Jarvis
             console.log("JARVIS")
+            const MicRecorder = require('mp3-recorder');
+ 
+            // New instance
+            const recorder = new MicRecorder({
+            bitRate: 128
+            });
+            
+            // Start recording. Browser will request permission to use your microphone.
+            recorder.start().then(() => {
+            // something else
+            }).catch((e) => {
+            console.error(e);
+            });
+            
+            // Once you are done singing your best song, stop and get the mp3.
+            recorder
+            .stop()
+            .getMp3().then(([buffer, blob]) => {
+            // do what ever you want with buffer and blob
+            // Example: Create a mp3 file and play
+            const file = new File(buffer, 'input.mp3', {
+                type: blob.type,
+                lastModified: Date.now()
+            });
+            
+            const player = new Audio(URL.createObjectURL(file));
+            player.play();
+            
+            }).catch((e) => {
+            alert('We could not retrieve your message');
+            console.log(e);
+            });
         }
     }
 }

@@ -28,6 +28,7 @@
     "@picovoice/pvrecorder-node": "^1.2.8",
     "dotenv": "^17.0.1",
     "langchain": "^0.3.29",
+    "mp3-recorder": "^3.1.4",
     "node-aplay": "^1.0.3"
   }
 }
