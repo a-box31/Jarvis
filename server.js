@@ -40,7 +40,19 @@ const ffmpeg = spawn('ffmpeg', [
   'input.mp3'
 ]);
 
-const arecord = spawn('arecord', [
+const rec = (os === "win32") ?
+spawn('sox', [
+  '-d',                     // Default recording device
+  '-t', 'raw',              // Output raw audio
+  '-r', '44100',            // Sample rate
+  '-c', '1',                // Mono
+  '-b', '16',               // 16-bit
+  '-e', 'signed-integer',   // Encoding
+  '-',                      // Output to stdout
+  'silence', '1', '0.3', '1%', '1', '1.5', '1%'
+])
+:
+spawn('arecord', [
   '-f', 'cd',         // Format: 16-bit, 44.1kHz, stereo
   '-t', 'raw'         // Raw PCM output
 ]) 
@@ -81,16 +93,16 @@ const start = async () => {
             console.log('Recording... Speak now. Will stop after silence.');
 
             // Pipe rec (sox) into ffmpeg
-            arecord.stdout.pipe(ffmpeg.stdin);
+            rec.stdout.pipe(ffmpeg.stdin);
 
             // Automatically close when done
-            arecord.on('close', () => {
-            console.log('Stopped recording (no more voice input).');
-            ffmpeg.stdin.end();
+            rec.on('close', () => {
+                console.log('Stopped recording (no more voice input).');
+                ffmpeg.stdin.end();
             });
 
             ffmpeg.on('close', () => {
-            console.log('MP3 file saved as input.mp3');
+                console.log('MP3 file saved as input.mp3');
             });
 
             const handle = new Leopard(PICOVOICE_API_KEY)
