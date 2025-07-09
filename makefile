@@ -1,5 +1,5 @@
 install:
-	sudo apt install mpg123 -y
+	sudo apt install mpg123 ffmpeg -y
 	npm install
 
 run:

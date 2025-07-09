@@ -2,7 +2,7 @@ import { Ollama } from "@langchain/ollama"
 // import { InferenceClient } from "@huggingface/inference";
 import { Picovoice } from "@picovoice/picovoice-node"
 import { Porcupine } from "@picovoice/porcupine-node" 
-
+import { spawn } from "child_process"
 import { Leopard } from "@picovoice/leopard-node"
 import textToSpeech from "@google-cloud/text-to-speech"
 import { playAudioFile } from "./audio-player.js"
@@ -21,16 +21,6 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = "jarvis.json"
 const { platform: os } = process;
 
 
-// const HUGGINGFACE_API_KEY = process.env.HUGGINGFACE_API_KEY
-
-
-// const hf = new InferenceClient(HUGGINGFACE_API_KEY);
-// const response = await hf.textToSpeech({
-//     model: "sesame/csm-1b",
-//     inputs: "Hello World!"
-// })
-
-// console.log(response)
 const frameLength = 512
 const recorder = new PvRecorder( frameLength, -1 )
 
@@ -40,7 +30,20 @@ let porcupine = new Porcupine(
     [0.5]
 )
 
+const ffmpeg = spawn('ffmpeg', [
+  '-f', 's16le',
+  '-ar', '44100',
+  '-ac', '1',
+  '-i', 'pipe:0',
+  '-acodec', 'libmp3lame',
+  '-ab', '192k',
+  'input.mp3'
+]);
 
+const arecord = spawn('arecord', [
+  '-f', 'cd',         // Format: 16-bit, 44.1kHz, stereo
+  '-t', 'raw'         // Raw PCM output
+]) 
 
 
 const llm = new Ollama({
@@ -66,19 +69,6 @@ async function TextToSpeechWithGoogle(text, outputFile){
     }
 }
 
-// (async()=>{
-//     try {
-        
-//         const handle = new Leopard(PICOVOICE_API_KEY)
-//         const result = handle.processFile("input.mp3");
-//         const response = await llm.invoke([result.transcript])
-//         await TextToSpeechWithGoogle( response, "output.mp3");
-//     } catch (err) {
-//         throw err
-//     }
-
-// })()
-
 const start = async () => {
     recorder.start();
     while(1) {
@@ -87,38 +77,26 @@ const start = async () => {
         // detected `Jarvis
         if (keywordIndex === 0) {
             console.log("JARVIS")
-            const MicRecorder = require('mp3-recorder');
- 
-            // New instance
-            const recorder = new MicRecorder({
-            bitRate: 128
+            // RECORD INPUT VOICE FILE
+            console.log('Recording... Speak now. Will stop after silence.');
+
+            // Pipe rec (sox) into ffmpeg
+            arecord.stdout.pipe(ffmpeg.stdin);
+
+            // Automatically close when done
+            arecord.on('close', () => {
+            console.log('Stopped recording (no more voice input).');
+            ffmpeg.stdin.end();
             });
-            
-            // Start recording. Browser will request permission to use your microphone.
-            recorder.start().then(() => {
-            // something else
-            }).catch((e) => {
-            console.error(e);
+
+            ffmpeg.on('close', () => {
+            console.log('MP3 file saved as input.mp3');
             });
-            
-            // Once you are done singing your best song, stop and get the mp3.
-            recorder
-            .stop()
-            .getMp3().then(([buffer, blob]) => {
-            // do what ever you want with buffer and blob
-            // Example: Create a mp3 file and play
-            const file = new File(buffer, 'input.mp3', {
-                type: blob.type,
-                lastModified: Date.now()
-            });
-            
-            const player = new Audio(URL.createObjectURL(file));
-            player.play();
-            
-            }).catch((e) => {
-            alert('We could not retrieve your message');
-            console.log(e);
-            });
+
+            const handle = new Leopard(PICOVOICE_API_KEY)
+            const result = handle.processFile("input.mp3");
+            const response = await llm.invoke([result.transcript])
+            await TextToSpeechWithGoogle( response, "output.mp3");
         }
     }
 }
