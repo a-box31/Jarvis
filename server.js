@@ -57,8 +57,8 @@ async function TextToSpeechWithGoogle(text, outputFile){
 }
 
 const start = async () => {
-    console.log("Listening for JARVIS")
     recorder.start();
+    console.log("Listening for JARVIS")
     while(1) {
         const frames = await recorder.read();
         const keywordIndex = porcupine.process(frames);
@@ -93,19 +93,19 @@ const start = async () => {
             .pipe(outputFile);
             // Start recording
             micInstance.start();
-            console.log("recording for 7 seconds")
+            await playAudioFile("beep.mp3")
 
             await new Promise(resolve => {
                 setTimeout(() => {
                     micInstance.stop();
-                    console.log("Mic stopped");
+                    playAudioFile("beep.mp3")
                     resolve();
                 }, 7000);
             });
 
             const handle = new Leopard(PICOVOICE_API_KEY)
             const result = await handle.processFile("input.mp3");
-            console.log(result)
+            console.log(result.transcript)
             const response = await llm.invoke([result.transcript])
             await TextToSpeechWithGoogle( response, "output.mp3");
         }
