@@ -1,31 +1,43 @@
-import { spawn } from "child_process"
+import fs from "fs";
+import mic from "mic";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
 
-const ffmpeg = spawn('ffmpeg', [
-  '-f', 's16le',
-  '-ar', '44100',
-  '-ac', '1',
-  '-i', 'pipe:0',
-  '-acodec', 'libmp3lame',
-  '-ab', '192k',
-  'output.mp3'
-]);
+ffmpeg.setFfmpegPath(ffmpegPath);
 
-const arecord = spawn('arecord', [
-  '-f', 'cd',         // Format: 16-bit, 44.1kHz, stereo
-  '-t', 'raw'         // Raw PCM output
-]);
-
-console.log('Recording... Speak now. Will stop after silence.');
-
-// Pipe rec (sox) into ffmpeg
-arecord.stdout.pipe(ffmpeg.stdin);
-
-// Automatically close when done
-arecord.on('close', () => {
-  console.log('Stopped recording (no more voice input).');
-  ffmpeg.stdin.end();
+// Create mic instance
+const micInstance = mic({
+  rate: "22000",
+  channels: "1",
+  bitwidth: "16",
+  encoding: "signed-integer",
+  device: "default", // optional: set your input device
 });
 
-ffmpeg.on('close', () => {
-  console.log('MP3 file saved as output.mp3');
-});
+const micInputStream = micInstance.getAudioStream();
+
+// Output file stream
+const outputFile = fs.createWriteStream("output.mp3");
+
+// Pipe mic to ffmpeg to convert to MP3
+const ffmpegProcess = ffmpeg()
+  .input(micInputStream)
+  .inputFormat("s16le")
+  .audioCodec("libmp3lame")
+  .audioBitrate(197)
+  .format("mp3")
+  .on("error", (err) => {
+    console.error("FFmpeg error:", err.message);
+  })
+  .on("end", () => {
+    console.log("Recording finished and saved to output.mp3");
+  })
+  .pipe(outputFile);
+
+// Start recording
+micInstance.start();
+console.log("recording for 10 seconds")
+setTimeout(() => {
+  console.log("mic stopped")
+  micInstance.stop();
+}, 10000) //stop after 5 seconds
