@@ -59,6 +59,7 @@ async function TextToSpeechWithGoogle(text, outputFile){
 const start = async () => {
     recorder.start();
     console.log("Listening for JARVIS")
+    await playAudioFile("beep.mp3")
     while(1) {
         const frames = await recorder.read();
         const keywordIndex = porcupine.process(frames);
