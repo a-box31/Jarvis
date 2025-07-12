@@ -72,11 +72,11 @@ const start = async () => {
             console.log('Recording... Speak now. Will stop after silence.');
             // Create mic instance
             const micInstance = mic({
-            rate: "22000",
-            channels: "1",
-            bitwidth: "16",
-            encoding: "signed-integer",
-            device: "default", // optional: set your input device
+                rate: "22000",
+                channels: "2",
+                bitwidth: "16",
+                encoding: "signed-integer",
+                device: "default", // optional: set your input device
             });
 
             const micInputStream = micInstance.getAudioStream();
