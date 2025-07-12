@@ -33,6 +33,8 @@ let porcupine = new Porcupine(
     [0.5]
 )
 
+const handle = new Leopard(PICOVOICE_API_KEY)
+
 const llm = new Ollama({
     model: "llama3.1",
     temperature: 0,
@@ -90,7 +92,6 @@ const start = async () => {
             })
             .on("end", async () => {
                 console.log("Recording finished and saved to input.mp3");
-                const handle = new Leopard(PICOVOICE_API_KEY)
                 const result = await handle.processFile("input.mp3");
                 console.log(result.transcript)
                 const response = await llm.invoke([result.transcript])
