@@ -97,18 +97,19 @@ const start = async () => {
             await playAudioFile("beep.mp3")
 
             await new Promise(resolve => {
-                setTimeout(() => {
+                setTimeout(async () => {
                     micInstance.stop();
-                    playAudioFile("beep.mp3")
+                    playAudioFile("beep.mp3");
+                    
+                    const handle = new Leopard(PICOVOICE_API_KEY)
+                    const result = await handle.processFile("input.mp3");
+                    console.log(result.transcript)
+                    const response = await llm.invoke([result.transcript])
+                    await TextToSpeechWithGoogle( response, "output.mp3");
+                    
                     resolve();
                 }, 7000);
             });
-
-            const handle = new Leopard(PICOVOICE_API_KEY)
-            const result = await handle.processFile("input.mp3");
-            console.log(result.transcript)
-            const response = await llm.invoke([result.transcript])
-            await TextToSpeechWithGoogle( response, "output.mp3");
         }
     }
 }
