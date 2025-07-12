@@ -88,8 +88,13 @@ const start = async () => {
             .on("error", (err) => {
                 console.error("FFmpeg error:", err.message);
             })
-            .on("end", () => {
+            .on("end", async () => {
                 console.log("Recording finished and saved to input.mp3");
+                const handle = new Leopard(PICOVOICE_API_KEY)
+                const result = await handle.processFile("input.mp3");
+                console.log(result.transcript)
+                const response = await llm.invoke([result.transcript])
+                await TextToSpeechWithGoogle( response, "output.mp3");
             })
             .pipe(outputFile);
             // Start recording
@@ -100,13 +105,6 @@ const start = async () => {
                 setTimeout(async () => {
                     micInstance.stop();
                     playAudioFile("beep.mp3");
-                    
-                    const handle = new Leopard(PICOVOICE_API_KEY)
-                    const result = await handle.processFile("input.mp3");
-                    console.log(result.transcript)
-                    const response = await llm.invoke([result.transcript])
-                    await TextToSpeechWithGoogle( response, "output.mp3");
-                    
                     resolve();
                 }, 7000);
             });
