@@ -1,7 +1,9 @@
 import { Ollama } from "@langchain/ollama"
 // import { InferenceClient } from "@huggingface/inference";
 import { Porcupine } from "@picovoice/porcupine-node" 
-import { spawn } from "child_process"
+import mic from "mic";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
 import { Leopard } from "@picovoice/leopard-node"
 import textToSpeech from "@google-cloud/text-to-speech"
 import { playAudioFile } from "./audio-player.js"
@@ -9,6 +11,8 @@ import fs, { unlink } from "fs"
 
 import dotenv from "dotenv"
 import { PvRecorder } from "@picovoice/pvrecorder-node"
+const { platform: os } = process;
+
 
 dotenv.config();
 
@@ -16,7 +20,6 @@ const BASE_URL = process.env.BASE_URL
 const PICOVOICE_API_KEY = process.env.PICOVOICE_API_KEY
 process.env.GOOGLE_APPLICATION_CREDENTIALS = "jarvis.json"
 
-const { platform: os } = process;
 
 
 const frameLength = 512
@@ -28,33 +31,7 @@ let porcupine = new Porcupine(
     [0.5]
 )
 
-const ffmpeg = spawn('ffmpeg', [
-  '-f', 's16le',
-  '-ar', '44100',
-  '-ac', '1',
-  '-i', 'pipe:0',
-  '-acodec', 'libmp3lame',
-  '-ab', '192k',
-  'input.mp3'
-]);
-
-const rec = (os === "win32") ?
-spawn('sox', [
-  '-d',                     // Default recording device
-  '-t', 'raw',              // Output raw audio
-  '-r', '44100',            // Sample rate
-  '-c', '1',                // Mono
-  '-b', '16',               // 16-bit
-  '-e', 'signed-integer',   // Encoding
-  '-',                      // Output to stdout
-  'silence', '1', '0.3', '1%', '1', '1.5', '1%'
-])
-:
-spawn('arecord', [
-  '-f', 'cd',         // Format: 16-bit, 44.1kHz, stereo
-  '-t', 'raw'         // Raw PCM output
-]) 
-
+const handle = new Leopard(PICOVOICE_API_KEY)
 
 const llm = new Ollama({
     model: "llama3.1",
@@ -81,6 +58,8 @@ async function TextToSpeechWithGoogle(text, outputFile){
 
 const start = async () => {
     recorder.start();
+    console.log("Listening for JARVIS")
+    await playAudioFile("beep.mp3")
     while(1) {
         const frames = await recorder.read();
         const keywordIndex = porcupine.process(frames);
@@ -89,24 +68,45 @@ const start = async () => {
             console.log("JARVIS")
             // RECORD INPUT VOICE FILE
             console.log('Recording... Speak now. Will stop after silence.');
-
-            // Pipe rec (sox) into ffmpeg
-            rec.stdout.pipe(ffmpeg.stdin);
-
-            // Automatically close when done
-            rec.on('close', () => {
-                console.log('Stopped recording (no more voice input).');
-                ffmpeg.stdin.end();
+            // Create mic instance
+            const micInstance = mic({
+                rate: "22000",
+                channels: "2",
+                bitwidth: "16",
+                encoding: "signed-integer",
+                device: "default", // optional: set your input device
             });
 
-            ffmpeg.on('close', () => {
-                console.log('MP3 file saved as input.mp3');
-            });
+            const micInputStream = micInstance.getAudioStream();
+            const outputFile = fs.createWriteStream("input.mp3");
+            const ffmpegProcess = ffmpeg()
+            .input(micInputStream)
+            .inputFormat("s16le")
+            .audioCodec("libmp3lame")
+            .audioBitrate(197)
+            .format("mp3")
+            .on("error", (err) => {
+                console.error("FFmpeg error:", err.message);
+            })
+            .on("end", async () => {
+                console.log("Recording finished and saved to input.mp3");
+                const result = await handle.processFile("input.mp3");
+                console.log(result.transcript)
+                const response = await llm.invoke([result.transcript])
+                await TextToSpeechWithGoogle( response, "output.mp3");
+            })
+            .pipe(outputFile);
+            // Start recording
+            micInstance.start();
+            await playAudioFile("beep.mp3")
 
-            const handle = new Leopard(PICOVOICE_API_KEY)
-            const result = handle.processFile("input.mp3");
-            const response = await llm.invoke([result.transcript])
-            await TextToSpeechWithGoogle( response, "output.mp3");
+            await new Promise(resolve => {
+                setTimeout(async () => {
+                    micInstance.stop();
+                    playAudioFile("beep.mp3");
+                    resolve();
+                }, 7000);
+            });
         }
     }
 }
