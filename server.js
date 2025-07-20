@@ -1,6 +1,5 @@
 import { Ollama } from "@langchain/ollama"
 // import { InferenceClient } from "@huggingface/inference";
-import { Picovoice } from "@picovoice/picovoice-node"
 import { Porcupine } from "@picovoice/porcupine-node" 
 import { spawn } from "child_process"
 import { Leopard } from "@picovoice/leopard-node"
@@ -9,7 +8,6 @@ import { playAudioFile } from "./audio-player.js"
 import fs, { unlink } from "fs"
 
 import dotenv from "dotenv"
-import { error } from "console";
 import { PvRecorder } from "@picovoice/pvrecorder-node"
 
 dotenv.config();
